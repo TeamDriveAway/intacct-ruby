@@ -7,6 +7,7 @@ module IntacctRuby
   class Function
     ALLOWED_TYPES = %w(
       readByQuery
+      readMore
       read
       readByName
       create
@@ -26,7 +27,7 @@ module IntacctRuby
       xml = Builder::XmlMarkup.new
 
       xml.function controlid: controlid do
-        if @function_type == 'readByQuery'
+        if @function_type == 'readByQuery' or @function_type == 'readMore'
           xml.tag!(@function_type) do
             xml << argument_xml(@arguments)
           end
@@ -56,7 +57,7 @@ module IntacctRuby
       xml = Builder::XmlMarkup.new
 
       arguments_to_convert.each do |key, value|
-        argument_key = key.to_s.downcase
+        argument_key = key.to_s.downcase.camelize(:lower).to_sym
 
         xml.tag!(argument_key) do
           xml << argument_value_as_xml(value)
@@ -68,12 +69,12 @@ module IntacctRuby
 
     def argument_value_as_xml(value)
       case value
-      when Hash
-        argument_xml(value) # recursive case
-      when Array
-        argument_value_list_xml(value) # recursive case
-      else
-        value.to_s # end case
+        when Hash
+          argument_xml(value) # recursive case
+        when Array
+          argument_value_list_xml(value) # recursive case
+        else
+          value.to_s # end case
       end
     end
 
