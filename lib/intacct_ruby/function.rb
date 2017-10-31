@@ -23,37 +23,27 @@ module IntacctRuby
       validate_type!
     end
 
-    def read_args(*required_fields)
-      
-      query_args = {:object=>@object_type}
-      
-      if fields = self.query_fields(@arguments[:fields] || required_fields.include?(:fields))
-        query_args[:fields] = fields
+    def delete_read_args(fields, *required_fields)
+      return  fields.inject({}) do |args, field|
+        value = self.delete_read_args_value(@arguments[field])
+        (value && value != "") || required_fields.include?(field) ? args.merge(field=>value) : args
       end
-
-      query = self.query_fields(@arguments[:query])
-      include_query = required_fields.include?(:query) || (!query.nil?  && query != "")
-      if include_query
-        query_args[:query] = query
-      end
-
-      return query_args
     end
-
     def to_xml
       xml = Builder::XmlMarkup.new
 
       xml.function controlid: controlid do
-        if @function_type =~ /^read/
+        if @function_type =~ /^read|delete/
           xml.tag!(@function_type) do
             case @function_type.to_s
-            when 'read', 'readByName', 'readMore'
-              required_params = [:keys]
-            when 'readByQuery'
-              required_params = []
+            when 'read', 'readByName'
+              args = self.delete_read_args([:keys, :fields], :keys)
+            when 'readByQuery', 'readMore'
+              args = self.delete_read_args([:fields, :query, :pagesize], :query)
+            when 'delete'
+              args = self.delete_read_args([:keys])
             end
-            query_args = self.read_args(*required_params)
-            xml << argument_xml(query_args)
+            xml << argument_xml(args)
           end
         else
           xml.tag!(@function_type) do
@@ -67,10 +57,10 @@ module IntacctRuby
       xml.target!
     end
 
-    def query_fields(fields)
-      return nil if fields.nil? || fields == ""
-      return fields unless fields.is_a?(Array)
-      return fields.join(',')
+    def delete_read_args_value(value)
+      return nil if value.nil? || value == ""
+      return value unless value.is_a?(Array)
+      return value.join(',')
     end
     
     private

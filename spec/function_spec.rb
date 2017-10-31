@@ -30,81 +30,60 @@ describe Function do
     end
   end
 
-  describe :query_fields do
+  describe :delete_read_args_value do
     subject{Function.new(:create, :widget, {})}
 
     it "converts a an array to comma-separated list" do
-      expect(subject.query_fields(%w{one two three})) .to eq 'one,two,three'
+      expect(subject.delete_read_args_value(%w{one two three})) .to eq 'one,two,three'
     end
 
     it "returns the value passed if not an array" do
-      expect(subject.query_fields('four')) .to eq 'four'
+      expect(subject.delete_read_args_value('four')) .to eq 'four'
     end
 
     it "returns nil if the value passed is an empty string" do
-      expect(subject.query_fields('')) .to be_nil
+      expect(subject.delete_read_args_value('')) .to be_nil
     end
 
     it "returns nil if the value passed is nil" do
-      expect(subject.query_fields(nil)) .to be_nil
+      expect(subject.delete_read_args_value(nil)) .to be_nil
     end
   end
 
-  describe "read_args" do
+
+  describe "delete_read_args" do
     let(:object_type)   { :objecttype }
     let(:function_type) { :readByQuery }
     let(:fields) { "fields" }
     let(:query) { "field=value" }
+    let(:keys) { 'some-keys-value' }
     let(:arguments) {  
       {
         :fields=>fields,
-        :query=>query
+        :query=>query,
+        :keys=>keys
       }
     }
     let(:function)      { Function.new(function_type, object_type, arguments) }
-
-    it "returns an object first" do
-      args = function.read_args
-      expect(args.keys[0]).to eq :object
-      expect(args[:object]).to eq 'objecttype'
-    end
-
-    it "returns the fields second" do
-      args = function.read_args
-      expect(args.keys[1].to_s).to eq 'fields'
-      expect(args[:fields]).to eq function.query_fields(fields)
-    end
-
-    it "excludes fields if it's nil but fields is not supplied in the required array" do
-      arguments[:fields] = nil
-      args = function.read_args
-      expect(args.keys).not_to include 'fields'
-    end
-
-    it "includes fields if it's nil but fields is supplied in the required array" do
-      arguments[:fields] = nil
-      args = function.read_args(:fields)
-      expect(args.keys[1].to_s).to eq 'fields'
+    
+    it "calls delete_read_args_value with each supplied key and includes it" do
+      function.expects(:delete_read_args_value).with(fields).returns(fields)
+      function.delete_read_args([:fields])[:fields] == fields
     end
 
 
-    it "returns the query last" do
-      args = function.read_args
-      expect(args.keys.last.to_s).to eq 'query'
-      expect(args[:query]).to eq query
+    it "calls delete_read_args_value with each supplied key but excludes it if it's blank" do
+      function.expects(:delete_read_args_value).with(fields).returns(nil)
+      expect(function.delete_read_args([:fields]).keys).not_to include(:fields)
+      function.expects(:delete_read_args_value).with(fields).returns("")
+      expect(function.delete_read_args([:fields]).keys).not_to include(:fields)
     end
-
-    it "excludes query if it's nil but query is not supplied in the required array" do
-      arguments[:query] = nil
-      args = function.read_args
-      expect(args.keys).not_to include 'query'
-    end
-
-    it "includes query if it's nil but query is not supplied in the required array" do
-      arguments[:query] = nil
-      args = function.read_args(:query)
-      expect(args.keys[2].to_s).to eq 'query'
-      expect(args[:query]).to eq nil
+    
+    it "calls delete_read_args_value with each supplied key and includes it if it's blank in the subsequent required array" do
+      function.expects(:delete_read_args_value).with(fields).returns(nil)
+      expect(function.delete_read_args([:fields], :fields).keys).to include(:fields)
+      function.expects(:delete_read_args_value).with(fields).returns("")
+      expect(function.delete_read_args([:fields], :fields).keys).to include(:fields)
     end
   end
 
@@ -115,10 +94,39 @@ describe Function do
     let(:xml)           { Nokogiri::XML function.to_xml }
 
 
+    describe "delete" do
+      let(:function_type) { :delete }
+      let(:fields) { ["field1", "field2", "fieldThree"] }
+      let(:query) { "field=value" }
+      let(:arguments) {
+        {
+          :query=>"widget=value",
+          :fields=>fields
+        }
+      }
+      it 'has a controlid' do
+        xml_controlid = xml.xpath('function').first.attributes['controlid'].value
+
+        expect(xml_controlid)
+          .to include function_type.to_s, object_type.to_s
+      end
+
+      it 'calls delete_read_args has an OBJECT node with no params' do
+        function.expects(:delete_read_args).with([:keys]).returns({:object=>object_type})
+        function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
+
+        expect(xml.xpath("//#{function_type}").children[0].name)
+          .to eq "OBJECT"
+        expect(xml.xpath("//#{function_type}/OBJECT").inner_text)
+        .to eq object_type.to_s
+      end
+
+    end
+    
     describe "read style" do
       let(:fields) { ["field1", "field2", "fieldThree"] }
       let(:query) { "field=value" }
-      let(:arguments) {  
+      let(:arguments) {
         {
           :query=>"widget=value",
           :fields=>fields
@@ -134,8 +142,28 @@ describe Function do
             .to include function_type.to_s, object_type.to_s
         end
 
-        it 'calls read_args has an OBJECT node with no params' do
-          function.expects(:read_args).returns({:object=>object_type})
+        it 'calls delete_read_args has an OBJECT node with no params' do
+          function.expects(:delete_read_args).with([:fields, :query, :pagesize], :query).returns({:object=>object_type})
+          function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
+
+          expect(xml.xpath("//#{function_type}").children[0].name)
+            .to eq "OBJECT"
+          expect(xml.xpath("//#{function_type}/OBJECT").inner_text)
+          .to eq object_type.to_s
+        end
+      end
+
+      describe "readMore" do
+        let(:function_type) { :readMore }
+        it 'has a controlid' do
+          xml_controlid = xml.xpath('function').first.attributes['controlid'].value
+
+          expect(xml_controlid)
+            .to include function_type.to_s, object_type.to_s
+        end
+
+        it 'calls delete_read_args has an OBJECT node with no params' do
+          function.expects(:delete_read_args).with([:fields, :query, :pagesize], :query).returns({:object=>object_type})
           function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
 
           expect(xml.xpath("//#{function_type}").children[0].name)
@@ -155,7 +183,7 @@ describe Function do
         end
 
         it 'calls read_args has an OBJECT node with no params' do
-          function.expects(:read_args).with(:keys).returns({:object=>object_type})
+          function.expects(:delete_read_args).with([:keys, :fields], :keys).returns({:object=>object_type})
           function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
           expect(xml.xpath("//#{function_type}").children[0].name)
             .to eq "OBJECT"
@@ -165,7 +193,7 @@ describe Function do
       end
 
       describe "readByName" do
-        let(:function_type) { :readMore }
+        let(:function_type) { :readByName }
         it 'has a controlid' do
           xml_controlid = xml.xpath('function').first.attributes['controlid'].value
 
@@ -174,7 +202,7 @@ describe Function do
         end
 
         it 'calls read_args has an OBJECT node with no params' do
-          function.expects(:read_args).with(:keys).returns({:object=>object_type})
+          function.expects(:delete_read_args).with([:keys, :fields], :keys).returns({:object=>object_type})
           function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
           expect(xml.xpath("//#{function_type}").children[0].name)
             .to eq "OBJECT"
