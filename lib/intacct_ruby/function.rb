@@ -23,13 +23,37 @@ module IntacctRuby
       validate_type!
     end
 
+    def read_args(*required_fields)
+      
+      query_args = {:object=>@object_type}
+      
+      if fields = self.query_fields(@arguments[:fields] || required_fields.include?(:fields))
+        query_args[:fields] = fields
+      end
+
+      query = self.query_fields(@arguments[:query])
+      include_query = required_fields.include?(:query) || (!query.nil?  && query != "")
+      if include_query
+        query_args[:query] = query
+      end
+
+      return query_args
+    end
+
     def to_xml
       xml = Builder::XmlMarkup.new
 
       xml.function controlid: controlid do
-        if @function_type == 'readByQuery' or @function_type == 'readMore'
+        if @function_type =~ /^read/
           xml.tag!(@function_type) do
-            xml << argument_xml(@arguments)
+            case @function_type.to_s
+            when 'read', 'readByName', 'readMore'
+              required_params = [:keys]
+            when 'readByQuery'
+              required_params = []
+            end
+            query_args = self.read_args(*required_params)
+            xml << argument_xml(query_args)
           end
         else
           xml.tag!(@function_type) do
@@ -43,6 +67,12 @@ module IntacctRuby
       xml.target!
     end
 
+    def query_fields(fields)
+      return nil if fields.nil? || fields == ""
+      return fields unless fields.is_a?(Array)
+      return fields.join(',')
+    end
+    
     private
 
     def timestamp
@@ -57,7 +87,7 @@ module IntacctRuby
       xml = Builder::XmlMarkup.new
 
       arguments_to_convert.each do |key, value|
-        argument_key = key.to_s.downcase.camelize(:lower).to_sym
+        argument_key = key.to_s.upcase.to_sym
 
         xml.tag!(argument_key) do
           xml << argument_value_as_xml(value)
