@@ -8,7 +8,7 @@ require 'intacct_ruby/exceptions/unknown_function_type'
 include IntacctRuby
 
 def to_xml_key(symbol)
-  symbol.to_s.upcase
+  symbol.to_s
 end
 
 describe Function do
@@ -57,7 +57,7 @@ describe Function do
     let(:fields) { "fields" }
     let(:query) { "field=value" }
     let(:keys) { 'some-keys-value' }
-    let(:arguments) {  
+    let(:arguments) {
       {
         :fields=>fields,
         :query=>query,
@@ -65,7 +65,7 @@ describe Function do
       }
     }
     let(:function)      { Function.new(function_type, object_type, arguments) }
-    
+
     it "calls delete_read_args_value with each supplied key and includes it" do
       function.expects(:delete_read_args_value).with(fields).returns(fields)
       function.delete_read_args([:fields])[:fields] == fields
@@ -78,7 +78,7 @@ describe Function do
       function.expects(:delete_read_args_value).with(fields).returns("")
       expect(function.delete_read_args([:fields]).keys).not_to include(:fields)
     end
-    
+
     it "calls delete_read_args_value with each supplied key and includes it if it's blank in the subsequent required array" do
       function.expects(:delete_read_args_value).with(fields).returns(nil)
       expect(function.delete_read_args([:fields], :fields).keys).to include(:fields)
@@ -111,18 +111,21 @@ describe Function do
           .to include function_type.to_s, object_type.to_s
       end
 
-      it 'calls delete_read_args has an OBJECT node with no params' do
-        function.expects(:delete_read_args).with([:keys]).returns({:object=>object_type})
-        function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
+      it 'calls delete_read_args has an object node with no params' do
+        function.expects(:delete_read_args).with([:keys]).returns({:widget=>"value"})
+        function.expects(:argument_xml).with({:object=>object_type.to_s}).returns("<object>#{object_type}</object>")
+        function.expects(:argument_xml).with({:widget=>"value"}).returns("<widget>value</widget>")
 
         expect(xml.xpath("//#{function_type}").children[0].name)
-          .to eq "OBJECT"
-        expect(xml.xpath("//#{function_type}/OBJECT").inner_text)
+          .to eq "object"
+        expect(xml.xpath("//#{function_type}/object").inner_text)
         .to eq object_type.to_s
+        expect(xml.xpath("//#{function_type}/widget").inner_text)
+        .to eq "value"
       end
 
     end
-    
+
     describe "read style" do
       let(:fields) { ["field1", "field2", "fieldThree"] }
       let(:query) { "field=value" }
@@ -142,14 +145,18 @@ describe Function do
             .to include function_type.to_s, object_type.to_s
         end
 
-        it 'calls delete_read_args has an OBJECT node with no params' do
-          function.expects(:delete_read_args).with([:fields, :query, :pagesize], :query).returns({:object=>object_type})
-          function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
+        it 'calls delete_read_args has an object node with no params' do
+          function.expects(:delete_read_args).with([:fields, :query, :pagesize], :query).returns({:widget=>"value"})
+          function.expects(:argument_xml).with({:object=>object_type.to_s}).returns("<object>#{object_type}</object>")
+          function.expects(:argument_xml).with({:widget=>"value"}).returns("<widget>value</widget>")
 
           expect(xml.xpath("//#{function_type}").children[0].name)
-            .to eq "OBJECT"
-          expect(xml.xpath("//#{function_type}/OBJECT").inner_text)
+            .to eq "object"
+          expect(xml.xpath("//#{function_type}/object").inner_text)
           .to eq object_type.to_s
+          expect(xml.xpath("//#{function_type}/widget").inner_text)
+          .to eq "value"
+          
         end
       end
 
@@ -162,14 +169,18 @@ describe Function do
             .to include function_type.to_s, object_type.to_s
         end
 
-        it 'calls delete_read_args has an OBJECT node with no params' do
-          function.expects(:delete_read_args).with([:fields, :query, :pagesize], :query).returns({:object=>object_type})
-          function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
+        it 'calls delete_read_args has an object node with no params' do
+          function.expects(:delete_read_args).with([:fields, :query, :pagesize], :query).returns({:widget=>"value"})
+          function.expects(:argument_xml).with({:object=>object_type.to_s}).returns("<object>#{object_type}</object>")
+          function.expects(:argument_xml).with({:widget=>"value"}).returns("<widget>value</widget>")
 
           expect(xml.xpath("//#{function_type}").children[0].name)
-            .to eq "OBJECT"
-          expect(xml.xpath("//#{function_type}/OBJECT").inner_text)
+            .to eq "object"
+          expect(xml.xpath("//#{function_type}/object").inner_text)
           .to eq object_type.to_s
+          expect(xml.xpath("//#{function_type}/widget").inner_text)
+          .to eq "value"
+          
         end
       end
 
@@ -182,13 +193,18 @@ describe Function do
             .to include function_type.to_s, object_type.to_s
         end
 
-        it 'calls read_args has an OBJECT node with no params' do
-          function.expects(:delete_read_args).with([:keys, :fields], :keys).returns({:object=>object_type})
-          function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
+        it 'calls read_args has an object node with no params' do
+          function.expects(:delete_read_args).with([:keys, :fields], :keys).returns({:widget=>"value"})
+          function.expects(:argument_xml).with({:object=>object_type.to_s}).returns("<object>#{object_type}</object>")
+          function.expects(:argument_xml).with({:widget=>"value"}).returns("<widget>value</widget>")
+
           expect(xml.xpath("//#{function_type}").children[0].name)
-            .to eq "OBJECT"
-          expect(xml.xpath("//#{function_type}/OBJECT").inner_text)
+            .to eq "object"
+          expect(xml.xpath("//#{function_type}/object").inner_text)
           .to eq object_type.to_s
+          expect(xml.xpath("//#{function_type}/widget").inner_text)
+          .to eq "value"
+          
         end
       end
 
@@ -201,13 +217,16 @@ describe Function do
             .to include function_type.to_s, object_type.to_s
         end
 
-        it 'calls read_args has an OBJECT node with no params' do
-          function.expects(:delete_read_args).with([:keys, :fields], :keys).returns({:object=>object_type})
-          function.expects(:argument_xml).with({:object=>object_type}).returns("<OBJECT>#{object_type}</OBJECT>")
+        it 'calls read_args has an object node with no params' do
+          function.expects(:delete_read_args).with([:keys, :fields], :keys).returns({:widget=>"value"})
+          function.expects(:argument_xml).with({:object=>object_type.to_s}).returns("<object>#{object_type}</object>")
+          function.expects(:argument_xml).with({:widget=>"value"}).returns("<widget>value</widget>")
           expect(xml.xpath("//#{function_type}").children[0].name)
-            .to eq "OBJECT"
-          expect(xml.xpath("//#{function_type}/OBJECT").inner_text)
+            .to eq "object"
+          expect(xml.xpath("//#{function_type}/object").inner_text)
           .to eq object_type.to_s
+          expect(xml.xpath("//#{function_type}/widget").inner_text)
+          .to eq "value"
         end
       end
 
@@ -249,7 +268,7 @@ describe Function do
         it 'has function arguments as key/value pairs' do
           arguments.select { |_, value| [String, Integer].include?(value.class) }
                    .each do |key, expected_value|
-            xml_object_key = to_xml_key object_type
+            xml_object_key = object_type.upcase
             xml_argument_key = to_xml_key key
 
             xml_argument_value = xml.xpath(
@@ -267,7 +286,7 @@ describe Function do
           it 'converts those arguments to nested XML' do
             arguments.select { |_, value| value.is_a? Hash }
                      .each do |key, nested_value|
-              xml_object_key = to_xml_key object_type
+              xml_object_key = object_type.upcase
               xml_outer_key = to_xml_key key
 
               nested_value.each do |inner_key, inner_value|
@@ -287,7 +306,7 @@ describe Function do
           it 'converts those arguments to an XML list' do
             arguments.select { |_, value| value.is_a? Array }
                      .each do |outer_key, array_body|
-              xml_object_key = to_xml_key object_type
+              xml_object_key = object_type.upcase
               xml_array_key = to_xml_key outer_key # key of XML Array
               array_body.each do |hash_entry| # because array of hashes
                 hash_entry.each do |array_item_key, array_item_value|
@@ -307,4 +326,5 @@ describe Function do
     end
 
   end
+
 end

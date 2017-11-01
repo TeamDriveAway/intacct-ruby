@@ -43,6 +43,7 @@ module IntacctRuby
             when 'delete'
               args = self.delete_read_args([:keys])
             end
+            xml << argument_xml(:object=>@object_type)
             xml << argument_xml(args)
           end
         else
@@ -77,7 +78,7 @@ module IntacctRuby
       xml = Builder::XmlMarkup.new
 
       arguments_to_convert.each do |key, value|
-        argument_key = key.to_s.upcase.to_sym
+        argument_key = key.to_s.to_sym
 
         xml.tag!(argument_key) do
           xml << argument_value_as_xml(value)
