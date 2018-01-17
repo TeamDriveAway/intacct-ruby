@@ -39,7 +39,7 @@ module IntacctRuby
             when 'read', 'readByName'
               args = self.delete_read_args([:keys, :fields], :keys)
             when 'readByQuery', 'readMore'
-              args = self.delete_read_args([:fields, :query, :pagesize], :query)
+              args = self.delete_read_args([:fields, :query, :pagesize, :docparid], :query)
             when 'delete'
               args = self.delete_read_args([:keys])
             end
