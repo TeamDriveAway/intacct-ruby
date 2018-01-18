@@ -47,9 +47,17 @@ module IntacctRuby
             xml << argument_xml(args)
           end
         else
-          xml.tag!(@function_type) do
-            xml.tag!(@object_type.upcase) do
-              xml << argument_xml(@arguments)
+          if @object_type == "sodocument"
+            if @function_type == "create"
+              xml.tag!("create_sotransaction") do
+                xml << argument_xml(@arguments)
+              end
+            end
+          else
+            xml.tag!(@function_type) do
+              xml.tag!(@object_type.upcase) do
+                xml << argument_xml(@arguments)
+              end
             end
           end
         end
