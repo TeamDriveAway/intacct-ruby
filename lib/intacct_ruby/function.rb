@@ -53,8 +53,7 @@ module IntacctRuby
                 xml << argument_xml(@arguments)
               end
             elsif @function_type == "update"
-              binding.pry
-              xml.tag!("update_sotransaction", :key=>"Sales Invoice-#{@arguments["documentno"]}") do
+              xml.tag!("update_sotransaction", :key=>"Sales Invoice-#{@arguments["key"]}") do
                 xml << argument_xml(@arguments)
               end
             else
