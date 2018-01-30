@@ -54,7 +54,7 @@ module IntacctRuby
               end
             elsif @function_type == "update"
               xml.tag!("update_sotransaction", :key=>"Sales Invoice-#{@arguments["key"]}") do
-                xml << argument_xml(@arguments)
+                xml << argument_xml(@arguments.except("key"))
               end
             else
               xml.tag!(@function_type) do
@@ -98,8 +98,14 @@ module IntacctRuby
       arguments_to_convert.each do |key, value|
         argument_key = key.to_s.to_sym
 
-        xml.tag!(argument_key) do
-          xml << argument_value_as_xml(value)
+        if key == "updatesotransitem"
+          xml.tag!(argument_key, :line_num=>value["line_num"]) do
+            xml << argument_value_as_xml(value.except("line_num"))
+          end
+        else
+          xml.tag!(argument_key) do
+            xml << argument_value_as_xml(value)
+          end
         end
       end
 
